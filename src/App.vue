@@ -354,7 +354,6 @@ export default {
       // 2023/12/01 到期
       const wmsUrl = 'https://gis.mine.gov.tw/MineMaps_AutoUpdate/simpleWMS.aspx?';
       const mineLayer = L.tileLayer.wms(wmsUrl, wmsOption).addTo(mapInstance);
-      vm.layerContainer.push(mineLayer);
     },
   },
   computed: {},
