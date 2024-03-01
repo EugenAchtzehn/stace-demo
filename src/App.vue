@@ -4,14 +4,17 @@
     :class="{ 'is-active': isLoading }"
     data-text="資料載入中"
   ></div>
-  <div id="mapContainer" ref="mapContainer"></div>
+  <main style="display: flex">
+    <div class="main__map_container" id="mapContainer" ref="mapContainer"></div>
+    <div class="main__control_panel">Control Panel</div>
+  </main>
 </template>
 
 <script>
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet-kml';
-import 'leaflet-glify-layer';
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet-kml";
+import "leaflet-glify-layer";
 
 let mapInstance, layer;
 
@@ -25,9 +28,9 @@ export default {
       geoJsonLayerTest: {
         features: [
           {
-            type: 'Feature',
+            type: "Feature",
             geometry: {
-              type: 'MultiPolygon',
+              type: "MultiPolygon",
               // 原本的記錄方式會跳錯，所以下面用一支 disbracket() 來替換結構
               // 注意，原生 leaflet 跟 leaflet-glify (少一層) 能讀的結構似乎不同
               // 可能也跟 Polygon, MultiPolygon 的記錄方式有關，之後使用要先做測試用資料，確定 OK 再讀取 API
@@ -67,16 +70,16 @@ export default {
             properties: { DN: 2 },
           },
         ],
-        type: 'FeatureCollection',
-        name: 'Mid2_Country_Site',
+        type: "FeatureCollection",
+        name: "Mid2_Country_Site",
       },
       geoJsonLayerTest2: {
-        type: 'FeatureCollection',
+        type: "FeatureCollection",
         features: [
           {
-            type: 'Feature',
+            type: "Feature",
             geometry: {
-              type: 'MultiPolygon',
+              type: "MultiPolygon",
               // 先經後緯
               coordinates: [
                 [
@@ -93,10 +96,10 @@ export default {
                 ],
               ],
             },
-            properties: { DN: 2, color: 'red' },
+            properties: { DN: 2, color: "red" },
           },
         ],
-        name: 'Mid2_Country_Site',
+        name: "Mid2_Country_Site",
       },
       // the sample data on official page of leaflet-glify
       // geoJsonLayerCzech: {
@@ -132,7 +135,7 @@ export default {
     getGeoJsonLayer() {
       const vm = this;
       const url =
-        'https://raw.githubusercontent.com/wiki70170/XDevelop/master/Mid2_Country_Site.geojson';
+        "https://raw.githubusercontent.com/wiki70170/XDevelop/master/Mid2_Country_Site.geojson";
       // const url = 'src/assets/Mid2_Country_Site.geojson';
       return new Promise(function (resolve, reject) {
         vm.isLoading = true;
@@ -274,31 +277,31 @@ export default {
       // }
       switch (item.properties.DN) {
         case 1:
-          item.properties.color = 'gray';
+          item.properties.color = "gray";
           break;
         case 2:
-          item.properties.color = 'green';
+          item.properties.color = "green";
           break;
         case 3:
-          item.properties.color = 'yellow';
+          item.properties.color = "yellow";
           break;
         case 4:
-          item.properties.color = 'orange';
+          item.properties.color = "orange";
           break;
         case 5:
-          item.properties.color = 'red';
+          item.properties.color = "red";
           break;
         case 6:
-          item.properties.color = 'maroon';
+          item.properties.color = "maroon";
           break;
         case 7:
-          item.properties.color = 'violet';
+          item.properties.color = "violet";
           break;
         case 8:
-          item.properties.color = 'purple';
+          item.properties.color = "purple";
           break;
         case 9:
-          item.properties.color = 'navy';
+          item.properties.color = "navy";
           break;
         default:
           item.properties.color = null;
@@ -312,13 +315,13 @@ export default {
     },
     displayIntersectionKml() {
       const vm = this;
-      vm.axios.get('src/assets/T61_intersection.kml').then(function (response) {
+      vm.axios.get("src/assets/T61_intersection.kml").then(function (response) {
         let data = response.data;
         // console.log(arguments);
         // console.log(data);
         const parser = new DOMParser();
         // 解析 Kml
-        const kmlData = parser.parseFromString(data, 'text/xml');
+        const kmlData = parser.parseFromString(data, "text/xml");
         vm.kmlLayerIntersection = new L.KML(kmlData);
 
         vm.mapInstance.addLayer(vm.kmlLayerIntersection);
@@ -327,33 +330,70 @@ export default {
     // 懶得改
     displayCctvKml() {
       const vm = this;
-      vm.axios.get('src/assets/CCTV_T61.kml').then(function (response) {
+      vm.axios.get("src/assets/CCTV_T61.kml").then(function (response) {
         let data = response.data;
         // console.log(arguments);
         // console.log(data);
         const parser = new DOMParser();
         // 解析 Kml
-        const kmlData = parser.parseFromString(data, 'text/xml');
+        const kmlData = parser.parseFromString(data, "text/xml");
         vm.kmlLayerCctv = new L.KML(kmlData);
 
         vm.mapInstance.addLayer(vm.kmlLayerCctv);
       });
     },
-    displayMineWMS() {
+    displayMine2020WMS() {
       const vm = this;
       let mapInstance = vm.mapInstance;
+
+      // for (let i = 1; i < 4; i++){
+      //   const wmsOption = {
+      //     version: '1.3.0',
+      //     layers: i,
+      //     transparent: true,
+      //     bgcolor: '0xFFFFFF',
+      //     format: 'image/png',
+      //     // srs: 'EPSG:4326',
+      //     opacity: 0.1,
+      //     layerName: `MineMapLayer_${i}`,
+      //   };
+      //   const wmsUrl = 'https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_v2/MapServer/WMSServer?';
+      //   const mineLayer = L.tileLayer.wms(wmsUrl, wmsOption).addTo(mapInstance);
+      //   console.log(mineLayer);
+      // }
       const wmsOption = {
-        version: '1.3.0',
-        layers: 'MineArea',
+        version: "1.3.0",
+        layers: 1,
         transparent: true,
-        bgcolor: '0xFFFFFF',
-        format: 'image/png',
+        bgcolor: "0xFFFFFF",
+        format: "image/png",
         // srs: 'EPSG:4326',
-        layerName: 'MineArea',
+        opacity: 0.2,
+        layerName: `MineMapLayer_1`,
       };
-      // 2023/12/01 到期
-      const wmsUrl = 'https://gis.mine.gov.tw/MineMaps_AutoUpdate/simpleWMS.aspx?';
+      const wmsUrl =
+        "https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_v2/MapServer/WMSServer?";
       const mineLayer = L.tileLayer.wms(wmsUrl, wmsOption).addTo(mapInstance);
+      console.log(mineLayer);
+    },
+    displayMineHistoryWMS() {
+      const vm = this;
+      let mapInstance = vm.mapInstance;
+
+      for (let i = 0; i < 6; i++) {
+        const wmsOption = {
+          version: "1.3.0",
+          layers: i,
+          transparent: true,
+          bgcolor: "0xFFFFFF",
+          format: "image/png",
+          // srs: 'EPSG:4326',
+          layerName: `MineMapHistory_${i}`,
+        };
+        const wmsUrl =
+          "https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_history/MapServer/WMSServer?";
+        const mineLayer = L.tileLayer.wms(wmsUrl, wmsOption).addTo(mapInstance);
+      }
     },
   },
   computed: {},
@@ -365,16 +405,17 @@ export default {
       zoom: 9,
     });
     vm.mapInstance = mapInstance;
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(mapInstance);
     // console.log(L.glify.shader.fragment.polygon);
     // console.log(L.glify.shader.vertex);
 
-    vm.getGeoJsonLayer();
+    //vm.getGeoJsonLayer();
     // vm.displayGeoJsonTest();
-    vm.displayMineWMS();
+    vm.displayMine2020WMS();
+    //vm.displayMineHistoryWMS();
     // icon 目前直接在 kml 中改，由 flaticon 下載後放到公司測試機的路徑下
     // vm.displayIntersectionKml();
     // vm.displayCctvKml();
@@ -384,8 +425,12 @@ export default {
 </script>
 
 <style scoped>
-#mapContainer {
-  width: 100%;
+.main__map_container {
+  width: 70%;
+  height: 100vh;
+}
+.main__control_panel {
+  width: 25%;
   height: 100vh;
 }
 </style>
