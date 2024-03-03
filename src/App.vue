@@ -25,8 +25,8 @@
           <input
             class="form-check-input"
             type="checkbox"
-            id="toggleMineMapLine"
-            v-model="toggleMineMapLine"
+            v-model="mineMapLine"
+            @click="toggleMineMapLayers('mineMapLine')"
           />
           <label class="from-check-label">礦業用地(線)_202010</label>
         </div>
@@ -36,8 +36,8 @@
           <input
             class="form-check-input"
             type="checkbox"
-            id="toggleMineMapLine"
-            v-model="toggleMineMapPolygon"
+            v-model="mineMapPolygon"
+            @click="toggleMineMapLayers('mineMapPolygon')"
           />
           <label class="from-check-label">礦業用地(面)_202010</label>
         </div>
@@ -47,8 +47,8 @@
           <input
             class="form-check-input"
             type="checkbox"
-            id="toggleMineMapLine"
-            v-model="toggleMineMapArea"
+            v-model="mineMapArea"
+            @click="toggleMineMapLayers('mineMapArea')"
           />
           <label class="from-check-label">礦區範圍_202010</label>
         </div>
@@ -73,9 +73,9 @@ export default {
       WMSLayers: [],
       opacity1: '100',
       isLoading: false,
-      toggleMineMapLine: false,
-      toggleMineMapPolygon: false,
-      toggleMineMapArea: false,
+      mineMapLine: false,
+      mineMapPolygon: false,
+      mineMapArea: false,
     };
   },
   methods: {
@@ -86,6 +86,9 @@ export default {
       const opacityPercentage = Number(vm.opacity1) / 100;
       console.log('透明度百分比', opacityPercentage);
       vm.WMSLayers[0].setOpacity(opacityPercentage);
+    },
+    toggleMineMapLayers(layerType) {
+      console.log('layerType', layerType);
     },
     displayMine2020WMS() {
       const vm = this;
