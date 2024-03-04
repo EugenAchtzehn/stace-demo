@@ -8,7 +8,6 @@
     <div class="main__map_container" id="mapContainer" ref="mapContainer"></div>
     <div class="main__control_panel">
       <section class="main__recent_section">
-        <!-- <div class="h2 fw-bold">近期資料</div> -->
         <div class="main__layer_section">
           <div class="form-check">
             <input
@@ -74,7 +73,6 @@
         </div>
       </section>
       <section class="main__history_section">
-        <!-- <div class="h2 fw-bold">歷史資料</div> -->
         <div class="main__layer_section mineLand">
           <div class="form-check">
             <input
@@ -201,26 +199,27 @@
             />
           </div>
         </div>
+        <LayerSwitch></LayerSwitch>
       </section>
     </div>
   </main>
 </template>
 
 <script>
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-// import 'leaflet-kml';
-// import 'leaflet-glify-layer';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
-// let mapInstance, layer;
+import LayerSwitch from '@/components/LayerSwitch.vue';
 
 export default {
   // name: 'map_page',
+  components: {
+    LayerSwitch,
+  },
   data() {
     return {
       mapInstance: {},
       WMSLayers: [],
-      opacity1: "100",
       isLoading: false,
       mineMapLine: false,
       mineMapPolygon: false,
@@ -232,15 +231,15 @@ export default {
       mineHistoryArea2019: false,
       mineHistoryArea2020: false,
       layerOpacity: {
-        mineMapLine: "100",
-        mineMapPolygon: "100",
-        mineMapArea: "100",
-        mineHistoryLand2017: "100",
-        mineHistoryLand2019: "100",
-        mineHistoryLand2020: "100",
-        mineHistoryArea2018: "100",
-        mineHistoryArea2019: "100",
-        mineHistoryArea2020: "100",
+        mineMapLine: '100',
+        mineMapPolygon: '100',
+        mineMapArea: '100',
+        mineHistoryLand2017: '100',
+        mineHistoryLand2019: '100',
+        mineHistoryLand2020: '100',
+        mineHistoryArea2018: '100',
+        mineHistoryArea2019: '100',
+        mineHistoryArea2020: '100',
       },
     };
   },
@@ -269,52 +268,52 @@ export default {
       const vm = this;
       let mapInstance = vm.mapInstance;
       let layerNo;
-      let wmsUrl = "";
+      let wmsUrl = '';
 
       switch (WMSlayerName) {
-        case "mineMapLine":
+        case 'mineMapLine':
           layerNo = 1;
           break;
-        case "mineMapPolygon":
+        case 'mineMapPolygon':
           layerNo = 2;
           break;
-        case "mineMapArea":
+        case 'mineMapArea':
           layerNo = 3;
           break;
-        case "mineHistoryLand2017":
+        case 'mineHistoryLand2017':
           layerNo = 0;
           break;
-        case "mineHistoryLand2019":
+        case 'mineHistoryLand2019':
           layerNo = 1;
           break;
-        case "mineHistoryLand2020":
+        case 'mineHistoryLand2020':
           layerNo = 2;
           break;
-        case "mineHistoryArea2018":
+        case 'mineHistoryArea2018':
           layerNo = 3;
           break;
-        case "mineHistoryArea2019":
+        case 'mineHistoryArea2019':
           layerNo = 4;
           break;
-        case "mineHistoryArea2020":
+        case 'mineHistoryArea2020':
           layerNo = 5;
           break;
       }
 
       if (isHistory) {
         wmsUrl =
-          "https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_history/MapServer/WMSServer?";
+          'https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_history/MapServer/WMSServer?';
       } else {
         wmsUrl =
-          "https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_v2/MapServer/WMSServer?";
+          'https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_v2/MapServer/WMSServer?';
       }
 
       const wmsOption = {
-        version: "1.3.0",
+        version: '1.3.0',
         layers: layerNo,
         transparent: true,
-        bgcolor: "0xFFFFFF",
-        format: "image/png",
+        bgcolor: '0xFFFFFF',
+        format: 'image/png',
         // srs: 'EPSG:4326',
         opacity: 1,
         layerName: WMSlayerName,
@@ -342,7 +341,7 @@ export default {
       zoom: 10,
     });
     vm.mapInstance = mapInstance;
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(mapInstance);
@@ -359,6 +358,7 @@ export default {
 .main__control_panel {
   width: 30%;
   height: 100vh;
+  overflow: auto;
   background-color: #ecf0f1;
 }
 
@@ -373,8 +373,8 @@ export default {
   margin: 0 auto;
   padding: 0.8rem 0;
   /* width: 95%; */
-  height: 100%;
-  display: none;
+  /* height: 100%; */
+  /* display: none; */
 }
 
 .main__history_section {
@@ -382,12 +382,12 @@ export default {
   margin: 0 auto;
   padding: 0.8rem 0;
   /* width: 95%; */
-  height: 100%;
+  /* height: 100%; */
 }
 .mineArea {
   /* display: none; */
 }
 .mineLand {
-  display: none;
+  /* display: none; */
 }
 </style>
