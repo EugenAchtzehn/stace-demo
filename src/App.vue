@@ -199,7 +199,14 @@
             />
           </div>
         </div>
-        <LayerSwitch></LayerSwitch>
+
+        <LayerSwitch
+          v-for="(item, index) in mineMaplayers"
+          :key="item.nameChinese"
+          :passInLayerInfo="item"
+          @update-opacity="updateLayerOpacity"
+          @toggle-layer="toggleLayerDisplay"
+        ></LayerSwitch>
       </section>
     </div>
   </main>
@@ -212,15 +219,38 @@ import 'leaflet/dist/leaflet.css';
 import LayerSwitch from '@/components/LayerSwitch.vue';
 
 export default {
-  // name: 'map_page',
+  name: 'MainMap',
   components: {
     LayerSwitch,
   },
   data() {
     return {
       mapInstance: {},
+      // 存放 WMSLayer 的地方
       WMSLayers: [],
       isLoading: false,
+      mineMaplayers: [
+        {
+          nameChinese: '礦業用地(線)_202010',
+          nameEnglish: 'mineMapLine',
+        },
+        {
+          nameChinese: '礦業用地(面)_202010',
+          nameEnglish: 'mineMapAPolygon',
+        },
+        {
+          nameChinese: '礦區範圍_202010',
+          nameEnglish: 'mineMapArea',
+        },
+      ],
+      mineHistoryLayers: [
+        'mineHistoryLand2017',
+        'mineHistoryLand2019',
+        'mineHistoryLand2020',
+        'mineHistoryArea2018',
+        'mineHistoryArea2019',
+        'mineHistoryArea2020',
+      ],
       mineMapLine: false,
       mineMapPolygon: false,
       mineMapArea: false,
@@ -244,6 +274,8 @@ export default {
     };
   },
   methods: {
+    updateLayerOpacity() {},
+    toggleLayerDisplay() {},
     changeOpacity(WMSlayerName) {
       console.log(WMSlayerName);
       const vm = this;
@@ -346,7 +378,6 @@ export default {
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(mapInstance);
   },
-  created() {},
 };
 </script>
 

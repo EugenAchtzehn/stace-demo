@@ -7,7 +7,7 @@
         v-model="mineHistoryArea2020"
         @click="toggleMineMapLayers('mineHistoryArea2020', true)"
       />
-      <label class="from-check-label">礦區範圍_202008</label>
+      <label class="from-check-label">{{ passInLayerInfo.nameChinese }}</label>
     </div>
     <div v-if="mineHistoryArea2020">
       <label class="form-label"> 透明度：{{ layerOpacity.mineHistoryArea2020 }} </label>
@@ -30,6 +30,14 @@ export default {
       layerOpacity: { mineHistoryArea2020: '' },
     };
   },
+  // 接收父層傳入的數值
+  props: {
+    passInLayerInfo: {
+      type: Object,
+      default: () => ({}),
+    },
+  },
+  emits: ['update-opacity', 'toggle-layer'],
   methods: {
     toggleMineMapLayers() {},
     changeOpacity() {},
