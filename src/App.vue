@@ -8,69 +8,13 @@
     <div class="main__map_container" id="mapContainer" ref="mapContainer"></div>
     <div class="main__control_panel">
       <section class="main__recent_section">
-        <div class="main__layer_section">
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              v-model="mineMapLine"
-              @click="toggleMineMapLayers('mineMapLine', false)"
-            />
-            <label class="from-check-label">礦業用地(線)_202010</label>
-          </div>
-          <div v-if="mineMapLine">
-            <label class="form-label"> 透明度：{{ layerOpacity.mineMapLine }} </label>
-            <input
-              class="form-range"
-              type="range"
-              v-model="layerOpacity.mineMapLine"
-              step="10"
-              @change="changeOpacity('mineMapLine')"
-            />
-          </div>
-        </div>
-        <div class="main__layer_section">
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              v-model="mineMapPolygon"
-              @click="toggleMineMapLayers('mineMapPolygon', false)"
-            />
-            <label class="from-check-label">礦業用地(面)_202010</label>
-          </div>
-          <div v-if="mineMapPolygon">
-            <label class="form-label"> 透明度：{{ layerOpacity.mineMapPolygon }} </label>
-            <input
-              class="form-range"
-              type="range"
-              v-model="layerOpacity.mineMapPolygon"
-              step="10"
-              @change="changeOpacity('mineMapPolygon')"
-            />
-          </div>
-        </div>
-        <div class="main__layer_section">
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              v-model="mineMapArea"
-              @click="toggleMineMapLayers('mineMapArea', false)"
-            />
-            <label class="from-check-label">礦區範圍_202010</label>
-          </div>
-          <div v-if="mineMapArea">
-            <label class="form-label"> 透明度：{{ layerOpacity.mineMapArea }} </label>
-            <input
-              class="form-range"
-              type="range"
-              v-model="layerOpacity.mineMapArea"
-              step="10"
-              @change="changeOpacity('mineMapArea')"
-            />
-          </div>
-        </div>
+        <LayerSwitch
+          v-for="(item, index) in mineMapLayers"
+          :key="item.nameChinese"
+          :passInLayerInfo="item"
+          @update-opacity="updateLayerOpacity"
+          @toggle-layer="toggleLayerDisplay"
+        ></LayerSwitch>
       </section>
       <section class="main__history_section">
         <div class="main__layer_section mineLand">
@@ -199,14 +143,6 @@
             />
           </div>
         </div>
-
-        <LayerSwitch
-          v-for="(item, index) in mineMaplayers"
-          :key="item.nameChinese"
-          :passInLayerInfo="item"
-          @update-opacity="updateLayerOpacity"
-          @toggle-layer="toggleLayerDisplay"
-        ></LayerSwitch>
       </section>
     </div>
   </main>
@@ -229,18 +165,21 @@ export default {
       // 存放 WMSLayer 的地方
       WMSLayers: [],
       isLoading: false,
-      mineMaplayers: [
+      mineMapLayers: [
         {
           nameChinese: '礦業用地(線)_202010',
           nameEnglish: 'mineMapLine',
+          layerNo: 1,
         },
         {
           nameChinese: '礦業用地(面)_202010',
-          nameEnglish: 'mineMapAPolygon',
+          nameEnglish: 'mineMapPolygon',
+          layerNo: 2,
         },
         {
           nameChinese: '礦區範圍_202010',
           nameEnglish: 'mineMapArea',
+          layerNo: 3,
         },
       ],
       mineHistoryLayers: [
@@ -274,17 +213,25 @@ export default {
     };
   },
   methods: {
-    updateLayerOpacity() {},
-    toggleLayerDisplay() {},
-    changeOpacity(WMSlayerName) {
-      console.log(WMSlayerName);
+    updateLayerOpacity(layerInfo) {
       const vm = this;
-      const opacity = Number(vm.layerOpacity[WMSlayerName]) / 100;
-      vm.WMSLayers.forEach((item, index) => {
-        if (item.wmsParams.layerName === WMSlayerName) {
+      // console.log(layerInfo);
+      const opacity = Number(layerInfo.layerOpacity) / 100;
+      vm.WMSLayers.forEach((item) => {
+        if (item.wmsParams.layerName === layerInfo.layerName) {
           item.setOpacity(opacity);
         }
       });
+    },
+    toggleLayerDisplay(layerInfo) {
+      const vm = this;
+      // console.log(layerInfo);
+      // 假使為 false/關閉
+      if (!layerInfo.displayStatus) {
+        vm.closeWMSLayer(layerInfo.layerName);
+      } else {
+        vm.openWMSLayer(layerInfo.layerName, false);
+      }
     },
     closeWMSLayer(WMSlayerName) {
       const vm = this;
@@ -392,33 +339,25 @@ export default {
   overflow: auto;
   background-color: #ecf0f1;
 }
-
 .main__layer_section {
   border: 2px solid #0b346e;
   padding: 0.25rem;
   margin: 0.8rem;
 }
-
 .main__recent_section {
   background-color: #b5caa0;
   margin: 0 auto;
-  padding: 0.8rem 0;
-  /* width: 95%; */
-  /* height: 100%; */
-  /* display: none; */
+  padding: 0.5rem 0;
 }
-
 .main__history_section {
   background-color: #fad689;
   margin: 0 auto;
-  padding: 0.8rem 0;
-  /* width: 95%; */
-  /* height: 100%; */
+  padding: 0.5rem 0;
 }
-.mineArea {
-  /* display: none; */
+/* .mineArea {
+  display: none;
 }
 .mineLand {
-  /* display: none; */
-}
+  display: none;
+} */
 </style>
