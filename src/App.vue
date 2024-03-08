@@ -206,10 +206,10 @@
 </template>
 
 <script>
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
-import LayerSwitch from '@/components/LayerSwitch.vue';
+import LayerSwitch from "@/components/LayerSwitch.vue";
 
 export default {
   // name: 'map_page',
@@ -231,15 +231,15 @@ export default {
       mineHistoryArea2019: false,
       mineHistoryArea2020: false,
       layerOpacity: {
-        mineMapLine: '100',
-        mineMapPolygon: '100',
-        mineMapArea: '100',
-        mineHistoryLand2017: '100',
-        mineHistoryLand2019: '100',
-        mineHistoryLand2020: '100',
-        mineHistoryArea2018: '100',
-        mineHistoryArea2019: '100',
-        mineHistoryArea2020: '100',
+        mineMapLine: "100",
+        mineMapPolygon: "100",
+        mineMapArea: "100",
+        mineHistoryLand2017: "100",
+        mineHistoryLand2019: "100",
+        mineHistoryLand2020: "100",
+        mineHistoryArea2018: "100",
+        mineHistoryArea2019: "100",
+        mineHistoryArea2020: "100",
       },
     };
   },
@@ -268,52 +268,52 @@ export default {
       const vm = this;
       let mapInstance = vm.mapInstance;
       let layerNo;
-      let wmsUrl = '';
+      let wmsUrl = "";
 
       switch (WMSlayerName) {
-        case 'mineMapLine':
+        case "mineMapLine":
           layerNo = 1;
           break;
-        case 'mineMapPolygon':
+        case "mineMapPolygon":
           layerNo = 2;
           break;
-        case 'mineMapArea':
+        case "mineMapArea":
           layerNo = 3;
           break;
-        case 'mineHistoryLand2017':
+        case "mineHistoryLand2017":
           layerNo = 0;
           break;
-        case 'mineHistoryLand2019':
+        case "mineHistoryLand2019":
           layerNo = 1;
           break;
-        case 'mineHistoryLand2020':
+        case "mineHistoryLand2020":
           layerNo = 2;
           break;
-        case 'mineHistoryArea2018':
+        case "mineHistoryArea2018":
           layerNo = 3;
           break;
-        case 'mineHistoryArea2019':
+        case "mineHistoryArea2019":
           layerNo = 4;
           break;
-        case 'mineHistoryArea2020':
+        case "mineHistoryArea2020":
           layerNo = 5;
           break;
       }
 
       if (isHistory) {
         wmsUrl =
-          'https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_history/MapServer/WMSServer?';
+          "https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_history/MapServer/WMSServer?";
       } else {
         wmsUrl =
-          'https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_v2/MapServer/WMSServer?';
+          "https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_v2/MapServer/WMSServer?";
       }
 
       const wmsOption = {
-        version: '1.3.0',
+        version: "1.3.0",
         layers: layerNo,
         transparent: true,
-        bgcolor: '0xFFFFFF',
-        format: 'image/png',
+        bgcolor: "0xFFFFFF",
+        format: "image/png",
         // srs: 'EPSG:4326',
         opacity: 1,
         layerName: WMSlayerName,
@@ -337,14 +337,18 @@ export default {
     const vm = this;
     const mapDom = this.$refs.mapContainer;
     let mapInstance = L.map(mapDom, {
-      center: [24.66, 121.37],
-      zoom: 10,
+      center: [23.994975495847584, 121.55228927116447],
+      zoom: 15,
     });
     vm.mapInstance = mapInstance;
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(mapInstance);
+
+    vm.toggleMineMapLayers("mineMapLine", false);
+    vm.toggleMineMapLayers("mineMapPolygon", false);
+    vm.toggleMineMapLayers("mineMapArea", false);
   },
   created() {},
 };
@@ -352,14 +356,15 @@ export default {
 
 <style scoped>
 .main__map_container {
-  width: 70%;
+  width: 100%;
   height: 100vh;
 }
 .main__control_panel {
-  width: 30%;
+  /* width: 30%; */
   height: 100vh;
   overflow: auto;
   background-color: #ecf0f1;
+  display: none;
 }
 
 .main__layer_section {
