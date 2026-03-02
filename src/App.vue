@@ -49,11 +49,14 @@
       // 取得 GeoJSON 資料
       async getGeoJSONLayer() {
         const vm = this;
-        const url = "/Mid2_Country_Site.geojson";
+        const url = "/Mid2_Country_Site.json";
         vm.isLoading = true;
         try {
-          const response = await vm.axios.get(url, { responseType: "json" });
-          return response.data;
+          const response = await vm.axios.get(url, {
+            responseType: "text",
+            transformResponse: [(data) => data],
+          });
+          return JSON.parse(response.data);
         } catch (err) {
           console.error(err);
           throw err;
