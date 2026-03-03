@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     class="loader loader-default"
     :class="{ 'is-active': isLoading }"
@@ -8,10 +8,8 @@
     <div class="main__map_container" id="mapContainer" ref="mapContainer"></div>
     <div class="main__control_panel">
       <div class="h1">Control Panel</div>
-      <div class="main__layer_section">
-        礦業用地(線)
-        <label for="opacity1">透明度</label>
-        <input id="opacity1" type="range" v-model="opacity1" @change="rangeChange" />
+      <div v-for="layer in managedLayers" :key="layer.id">
+        <layer-item :layer="layer" @opacity-change="rangeChange" />
       </div>
     </div>
   </main>
@@ -22,14 +20,30 @@
   import "leaflet/dist/leaflet.css";
   import "leaflet-kml";
   import "leaflet.glify";
+  import LayerItem from "./components/LayerItem.vue";
+
+  class ManagedLayer {
+    constructor(id, name, type, params = {}, layerRef = null) {
+      this.id = id;
+      this.name = name;
+      // VectorLayer, TileLayer, etc.
+      this.type = type;
+      this.params = params;
+      this.layerRef = layerRef;
+    }
+  }
 
   export default {
+    components: {
+      LayerItem,
+    },
     // name: 'map_page',
     data() {
       return {
         // maxDN: 0,
         mapInstance: {},
         WMSLayers: [],
+        managedLayers: [],
         opacity1: "100",
         geoJsonData: {},
         isLoading: false,
@@ -38,13 +52,38 @@
       };
     },
     methods: {
-      rangeChange() {
+      rangeChange(payload) {
         const vm = this;
-        console.log("input changed...");
-        console.log(vm.opacity1);
-        const opacityPercentage = Number(vm.opacity1) / 100;
-        console.log("透明度百分比", opacityPercentage);
-        vm.WMSLayers[0].setOpacity(opacityPercentage);
+        let layerId = vm.managedLayers?.[0]?.id;
+        let opacityPercentage = Number(vm.opacity1) / 100;
+
+        if (payload && typeof payload === "object") {
+          layerId = payload.id;
+          opacityPercentage = payload.opacity;
+        }
+
+        const target = vm.managedLayers.find((item) => item.id === layerId);
+        if (!target) return;
+
+        target.params.opacity = opacityPercentage;
+
+        if (typeof target.layerRef?.setOpacity === "function") {
+          target.layerRef.setOpacity(opacityPercentage);
+        }
+
+        if (typeof target.layerRef?.eachLayer === "function") {
+          target.layerRef.eachLayer((childLayer) => {
+            if (typeof childLayer.setStyle === "function") {
+              childLayer.setStyle({
+                opacity: opacityPercentage,
+                fillOpacity: opacityPercentage,
+              });
+            }
+            if (typeof childLayer.setOpacity === "function") {
+              childLayer.setOpacity(opacityPercentage);
+            }
+          });
+        }
       },
       // 取得 GeoJSON 資料
       async getGeoJSONLayer() {
@@ -193,6 +232,15 @@
           vm.kmlLayerIntersection = new L.KML(kmlData);
 
           vm.mapInstance.addLayer(vm.kmlLayerIntersection);
+
+          const managedLayer = new ManagedLayer(
+            L.stamp(vm.kmlLayerIntersection),
+            "T61_intersection.kml",
+            "KML",
+            { opacity: 1, subType: "KML" },
+            vm.kmlLayerIntersection,
+          );
+          vm.managedLayers.push(managedLayer);
         });
       },
 
@@ -209,6 +257,15 @@
           vm.kmlLayerCctv = new L.KML(kmlData);
 
           vm.mapInstance.addLayer(vm.kmlLayerCctv);
+
+          const managedLayer = new ManagedLayer(
+            L.stamp(vm.kmlLayerCctv),
+            "CCTV_T61.kml",
+            "KML",
+            { opacity: 1, subType: "KML" },
+            vm.kmlLayerCctv,
+          );
+          vm.managedLayers.push(managedLayer);
         });
       },
 
@@ -229,6 +286,15 @@
           "https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_v2/MapServer/WMSServer";
         const mineLayer = L.tileLayer.wms(wmsUrl, wmsOption).addTo(mapInstance);
         vm.WMSLayers.push(mineLayer);
+
+        const managedLayer = new ManagedLayer(
+          L.stamp(mineLayer),
+          wmsOption.layerName,
+          "WMS",
+          { opacity: wmsOption.opacity },
+          mineLayer,
+        );
+        vm.managedLayers.push(managedLayer);
         // console.log(mineLayer);
       },
 
