@@ -16,12 +16,15 @@
 </template>
 
 <script lang="ts">
+  // ===== internal components & modules =====
+  import LayerItem from "./components/LayerItem.vue";
+
+  // ===== external libs =====
   import { defineComponent } from "vue";
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
   import "leaflet-kml";
   import "leaflet.glify";
-  import LayerItem from "./components/LayerItem.vue";
 
   // ===== types =====
   import type { Layer, LayerGroup, Map } from "leaflet";
@@ -50,10 +53,8 @@
     components: {
       LayerItem,
     },
-    // name: 'map_page',
     data() {
       return {
-        // maxDN: 0,
         mapInstance: null as Map | null,
         managedLayerGroup: null as LayerGroup | null,
         uiLayers: [] as ManagedLayerViewModel[],
@@ -145,7 +146,7 @@
         vm.refreshUiLayers();
       },
       // 取得 GeoJSON 資料
-      async getGeoJSONLayer(): Promise<GeoJsonData> {
+      async getGeoJSONData(): Promise<GeoJsonData> {
         const vm = this;
         const url = `${import.meta.env.BASE_URL}Mid2_Country_Site.json`;
         vm.isLoading = true;
@@ -178,7 +179,7 @@
           // .bindPopup(function (geoJsonToMap) {
           //   return geoJsonToMap.feature.properties.DN;
           // })
-          .addTo(vm.mapInstance as L.Map);
+          .addTo(vm.mapInstance as Map);
       },
 
       displayGeoJSONLeafletGL(geoJsonResponse: GeoJsonData) {
@@ -196,8 +197,6 @@
         L.glify.shapes({
           map: vm.mapInstance,
           data: geoJsonResponse,
-          // data: vm.geoJsonLayerTest,
-          // color: '#00FF00',
           // vertexShaderSource() {
           //   console.log(arguments);
           // },
@@ -212,15 +211,8 @@
           //   console.log('ev', event);
           //   console.log('arg', arguments);
           // },
-          // color() {
-          //   return {
-          //     r: 255,
-          //     g: 0,
-          //     b: 0,
-          //   };
-          // },
           // 不透明度，預設為 0.5，全不透是 1
-          opacity: 0.5,
+          opacity: 0.8,
           // preserveDrawingBuffer: 0,
           // borders: true,
         } as any);
@@ -289,7 +281,6 @@
         });
       },
 
-      // 懶得改
       displayCctvKml() {
         const vm = this;
         const url = `${import.meta.env.BASE_URL}CCTV_T61.kml`;
@@ -328,7 +319,6 @@
           type: "TileLayer",
           params: { opacity: wmsOption.opacity, subType: "WMS" },
         });
-        // console.log(mineLayer);
       },
 
       displayMineHistoryWMS() {
@@ -359,22 +349,17 @@
         zoom: 9,
       });
       vm.mapInstance = mapInstance;
-      // object
-      // console.log(typeof L.layerGroup(), L.layerGroup());
-
       vm.managedLayerGroup = L.layerGroup().addTo(mapInstance);
+      // 底圖，不放在 managedLayerGroup 裡管理
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(mapInstance);
-      // console.log(L.glify.shader.fragment.polygon);
-      // console.log(L.glify.shader.vertex);
 
-      const geoJsonData = await vm.getGeoJSONLayer();
+      const geoJsonData = await vm.getGeoJSONData();
+
       const bounds = L.geoJSON(geoJsonData as any).getBounds();
-      if (bounds.isValid()) {
-        vm.mapInstance.fitBounds(bounds);
-      }
+      if (bounds.isValid()) vm.mapInstance.fitBounds(bounds);
       vm.displayGeoJSONLeafletGL(geoJsonData);
 
       // Native Leaflet GeoJSON Rendering, this method is very slow
