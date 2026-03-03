@@ -8,8 +8,13 @@
     <div class="map_container" ref="mapEl"></div>
     <div class="control_panel">
       <div class="h1">圖層控制</div>
-      <div v-for="layer in managedLayers" :key="layer.id">
-        <layer-item :layer="layer" @opacity-change="rangeChange" />
+      <div class="layer_list">
+        <layer-item
+          :layer="layer"
+          @opacity-change="rangeChange"
+          v-for="layer in managedLayers"
+          :key="layer.id"
+        />
       </div>
     </div>
   </main>
@@ -72,15 +77,15 @@
         const updatedManagedLayers: ManagedLayer[] = [];
         vm.layerGroup.eachLayer((layer: Layer) => {
           const id = vm.layerGroup!.getLayerId(layer);
-          const managed = layer.managed || {};
+          const managed = layer.managed;
 
           const updatedManagedLayer: ManagedLayer = {
             id,
-            name: managed.name || `layer_${id}`,
-            type: managed.type || "UnknownLayer",
-            opacity: typeof managed.opacity === "number" ? managed.opacity : 1,
-            subType: managed.subType,
+            name: managed.name,
+            type: managed.type,
+            ...managed,
           };
+
           updatedManagedLayers.push(updatedManagedLayer);
         });
 
@@ -95,14 +100,13 @@
         const layerId = payload.id;
         const updatedOpacity = payload.opacity;
 
-        // 先更新 managedLayers 的 opacity（UI 狀態）
-        const managedLayer = vm.managedLayers.find((item) => item.id === layerId);
+        // 先更新 managedLayers 的 opacity（UI 層狀態）
+        const managedLayer = vm.managedLayers.find((item: ManagedLayer) => item.id === layerId);
         if (managedLayer) managedLayer.opacity = updatedOpacity;
 
         // 再用 id 找 layerGroup 內實體圖層做實際更新
         const targetLayer = vm.layerGroup.getLayer(layerId);
-        if (!targetLayer) return;
-        if (!targetLayer.managed) return;
+        if (!targetLayer || !targetLayer.managed) return;
 
         targetLayer.managed.opacity = updatedOpacity;
 
@@ -111,7 +115,10 @@
           eachLayer?: (fn: (childLayer: Layer) => void) => void;
         };
 
+        // targetLayer 有可能是多個圖層組成，向是 KML 圖層，內部還有多個 Layer 所以要使用下面的 eachLayer 來處理
+        // 如果 targetLayer 只有一個 Layer 則使用 setOpacity 來處理
         if (typeof leafLayer.setOpacity === "function") {
+          console.log("setOpacity", leafLayer.setOpacity);
           leafLayer.setOpacity(updatedOpacity);
         }
 
@@ -371,15 +378,21 @@
 <style scoped>
   .container {
     display: flex;
+    height: 100vh;
 
     .map_container {
       width: 70%;
-      height: 100vh;
     }
 
     .control_panel {
       width: 30%;
-      height: 100vh;
+
+      .layer_list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0 0.5rem;
+      }
     }
   }
 </style>

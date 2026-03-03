@@ -72,9 +72,9 @@
 
 <style scoped>
   .layer_section {
-    border: 2px solid #000;
+    border: 2px solid #a0a0a0;
+    border-radius: 0.25rem;
     padding: 0.25rem;
-    margin: 0.25rem;
   }
 
   .layer-title {
