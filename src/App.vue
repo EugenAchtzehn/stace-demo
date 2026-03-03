@@ -169,17 +169,10 @@
       },
 
       convertDnToColorLeafletGL(DN) {
-        let color;
-        if (DN <= 2) {
-          color = { r: 1, g: 1, b: 0 };
-        } else if (DN <= 4) {
-          color = { r: 1, g: 0.5, b: 0 };
-        } else if (DN <= 6) {
-          color = { r: 1, g: 0, b: 0 };
-        } else {
-          color = { r: 0.4, g: 0, b: 0.2 };
-        }
-        return color;
+        if (DN <= 2) return { r: 1, g: 1, b: 0 };
+        if (DN <= 4) return { r: 1, g: 0.5, b: 0 };
+        if (DN <= 6) return { r: 1, g: 0, b: 0 };
+        return { r: 0.4, g: 0, b: 0.2 };
       },
 
       convertDNtoColor(item) {
@@ -236,7 +229,7 @@
           const managedLayer = new ManagedLayer(
             L.stamp(vm.kmlLayerIntersection),
             "T61_intersection.kml",
-            "KML",
+            "VectorLayer",
             { opacity: 1, subType: "KML" },
             vm.kmlLayerIntersection,
           );
@@ -261,7 +254,7 @@
           const managedLayer = new ManagedLayer(
             L.stamp(vm.kmlLayerCctv),
             "CCTV_T61.kml",
-            "KML",
+            "VectorLayer",
             { opacity: 1, subType: "KML" },
             vm.kmlLayerCctv,
           );
@@ -290,7 +283,7 @@
         const managedLayer = new ManagedLayer(
           L.stamp(mineLayer),
           wmsOption.layerName,
-          "WMS",
+          "TileLayer",
           { opacity: wmsOption.opacity },
           mineLayer,
         );
