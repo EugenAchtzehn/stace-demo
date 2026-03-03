@@ -15,15 +15,34 @@
   </main>
 </template>
 
-<script>
-  import L from "leaflet";
+<script lang="ts">
+  import { defineComponent } from "vue";
+  import L, { type Layer } from "leaflet";
   import "leaflet/dist/leaflet.css";
   import "leaflet-kml";
   import "leaflet.glify";
   import LayerItem from "./components/LayerItem.vue";
-  import { layerGroup } from "leaflet";
+  import type {
+    LayerOpacityChangePayload,
+    ManagedLayerMeta,
+    ManagedLayerViewModel,
+  } from "./types/ManagedLayer";
 
-  export default {
+  type GeoJsonFeature = {
+    properties: {
+      DN: number;
+      color?: unknown;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+
+  type GeoJsonData = {
+    features: GeoJsonFeature[];
+    [key: string]: unknown;
+  };
+
+  export default defineComponent({
     components: {
       LayerItem,
     },
@@ -31,18 +50,20 @@
     data() {
       return {
         // maxDN: 0,
-        mapInstance: {},
-        managedLayerGroup: {},
-        uiLayers: [],
+        mapInstance: null as L.Map | null,
+        managedLayerGroup: null as L.LayerGroup | null,
+        uiLayers: [] as ManagedLayerViewModel[],
         opacity1: "100",
-        geoJsonData: {},
+        geoJsonData: {} as GeoJsonData,
         isLoading: false,
-        kmlLayerCctv: {},
+        kmlLayerCctv: {} as Layer,
       };
     },
     methods: {
-      addManagedLayer(layer, managed) {
+      addManagedLayer(layer: Layer, managed: ManagedLayerMeta) {
         const vm = this;
+        if (!vm.managedLayerGroup) return;
+
         layer.managed = managed;
         vm.managedLayerGroup.addLayer(layer);
         vm.refreshUiLayers();
@@ -50,22 +71,29 @@
 
       refreshUiLayers() {
         const vm = this;
-        const nextLayers = [];
-        vm.managedLayerGroup.eachLayer((layer) => {
-          const id = vm.managedLayerGroup.getLayerId(layer);
+        if (!vm.managedLayerGroup) return;
+
+        const nextLayers: ManagedLayerViewModel[] = [];
+        vm.managedLayerGroup.eachLayer((layer: Layer) => {
+          const id = vm.managedLayerGroup!.getLayerId(layer);
           const managed = layer.managed || {};
+          const opacity = Number(managed.params?.opacity ?? 1);
+
           nextLayers.push({
             id,
             name: managed.name || `layer_${id}`,
             type: managed.type || "Layer",
-            params: managed.params || { opacity: 1 },
+            params: { ...managed.params, opacity },
           });
         });
+
         vm.uiLayers = nextLayers;
       },
 
-      rangeChange(payload) {
+      rangeChange(payload?: LayerOpacityChangePayload) {
         const vm = this;
+        if (!vm.managedLayerGroup) return;
+
         let layerId = vm.uiLayers?.[0]?.id;
         let opacityPercentage = Number(vm.opacity1) / 100;
 
@@ -74,27 +102,39 @@
           opacityPercentage = payload.opacity;
         }
 
+        if (typeof layerId !== "number") return;
+
         const targetLayer = vm.managedLayerGroup.getLayer(layerId);
         if (!targetLayer) return;
         if (!targetLayer.managed) return;
 
-        targetLayer.managed.params = targetLayer.managed.params || {};
+        targetLayer.managed.params = targetLayer.managed.params || { opacity: 1 };
         targetLayer.managed.params.opacity = opacityPercentage;
 
-        if (typeof targetLayer.setOpacity === "function") {
-          targetLayer.setOpacity(opacityPercentage);
+        const leafLayer = targetLayer as unknown as {
+          setOpacity?: (opacity: number) => void;
+          eachLayer?: (fn: (childLayer: Layer) => void) => void;
+        };
+
+        if (typeof leafLayer.setOpacity === "function") {
+          leafLayer.setOpacity(opacityPercentage);
         }
 
-        if (typeof targetLayer.eachLayer === "function") {
-          targetLayer.eachLayer((childLayer) => {
-            if (typeof childLayer.setStyle === "function") {
-              childLayer.setStyle({
+        if (typeof leafLayer.eachLayer === "function") {
+          leafLayer.eachLayer((childLayer: Layer) => {
+            const child = childLayer as unknown as {
+              setStyle?: (style: { opacity: number; fillOpacity: number }) => void;
+              setOpacity?: (opacity: number) => void;
+            };
+
+            if (typeof child.setStyle === "function") {
+              child.setStyle({
                 opacity: opacityPercentage,
                 fillOpacity: opacityPercentage,
               });
             }
-            if (typeof childLayer.setOpacity === "function") {
-              childLayer.setOpacity(opacityPercentage);
+            if (typeof child.setOpacity === "function") {
+              child.setOpacity(opacityPercentage);
             }
           });
         }
@@ -102,16 +142,16 @@
         vm.refreshUiLayers();
       },
       // 取得 GeoJSON 資料
-      async getGeoJSONLayer() {
+      async getGeoJSONLayer(): Promise<GeoJsonData> {
         const vm = this;
         const url = `${import.meta.env.BASE_URL}Mid2_Country_Site.json`;
         vm.isLoading = true;
         try {
-          const response = await vm.axios.get(url, {
+          const response = await (vm as any).axios.get(url, {
             responseType: "text",
-            transformResponse: [(data) => data],
+            transformResponse: [(data: string) => data],
           });
-          return JSON.parse(response.data);
+          return JSON.parse(response.data) as GeoJsonData;
         } catch (err) {
           console.error(err);
           throw err;
@@ -121,24 +161,24 @@
         }
       },
 
-      displayGeoJSON(geoJsonResponse) {
+      displayGeoJSON(geoJsonResponse: GeoJsonData) {
         const vm = this;
         // 資料目前是 MultiPolygon
-        const geoJsonResponseFormatted = geoJsonResponse.features.map((item, index) => {
+        const geoJsonResponseFormatted = geoJsonResponse.features.map((item) => {
           return vm.convertDNtoColor(item);
         });
-        const geoJsonToMap = L.geoJSON(geoJsonResponseFormatted, {
-          style: function (feature) {
+        L.geoJSON(geoJsonResponseFormatted as any, {
+          style: function (feature: any) {
             return { color: feature.properties.color };
           },
         })
           // .bindPopup(function (geoJsonToMap) {
           //   return geoJsonToMap.feature.properties.DN;
           // })
-          .addTo(vm.mapInstance);
+          .addTo(vm.mapInstance as L.Map);
       },
 
-      displayGeoJSONLeafletGL(geoJsonResponse) {
+      displayGeoJSONLeafletGL(geoJsonResponse: GeoJsonData) {
         const vm = this;
         if (!geoJsonResponse || !Array.isArray(geoJsonResponse.features)) {
           console.error("Invalid GeoJSON payload for glify shapes");
@@ -146,11 +186,11 @@
         }
 
         geoJsonResponse.features.forEach((item) => {
-          if (!item.properties) item.properties = {};
+          if (!item.properties) item.properties = { DN: 0 };
           item.properties.color = vm.convertDnToColorLeafletGL(item.properties.DN);
         });
 
-        const shapes = L.glify.shapes({
+        L.glify.shapes({
           map: vm.mapInstance,
           data: geoJsonResponse,
           // data: vm.geoJsonLayerTest,
@@ -163,7 +203,7 @@
           // },
           color() {
             // console.log(arguments[1].properties.color);
-            return arguments[1].properties.color;
+            return (arguments as IArguments)[1].properties.color;
           },
           // click(event) {
           //   console.log('ev', event);
@@ -180,18 +220,17 @@
           opacity: 0.5,
           // preserveDrawingBuffer: 0,
           // borders: true,
-        });
-        console.log("shapes", shapes);
+        } as any);
       },
 
-      convertDnToColorLeafletGL(DN) {
+      convertDnToColorLeafletGL(DN: number) {
         if (DN <= 2) return { r: 1, g: 1, b: 0 };
         if (DN <= 4) return { r: 1, g: 0.5, b: 0 };
         if (DN <= 6) return { r: 1, g: 0, b: 0 };
         return { r: 0.4, g: 0, b: 0.2 };
       },
 
-      convertDNtoColor(item) {
+      convertDNtoColor(item: GeoJsonFeature) {
         // 最大為 9
         switch (item.properties.DN) {
           case 1:
@@ -231,8 +270,8 @@
       displayIntersectionKml() {
         const vm = this;
         const url = `${import.meta.env.BASE_URL}T61_intersection.kml`;
-        vm.axios.get(url).then(function (response) {
-          let data = response.data;
+        (vm as any).axios.get(url).then(function (response: { data: string }) {
+          const data = response.data;
           // console.log(arguments);
           // console.log(data);
           const parser = new DOMParser();
@@ -251,8 +290,8 @@
       displayCctvKml() {
         const vm = this;
         const url = `${import.meta.env.BASE_URL}CCTV_T61.kml`;
-        vm.axios.get(url).then(function (response) {
-          let data = response.data;
+        (vm as any).axios.get(url).then(function (response: { data: string }) {
+          const data = response.data;
           // console.log(arguments);
           const parser = new DOMParser();
           // 解析 Kml
@@ -268,7 +307,6 @@
 
       displayMine2020WMS() {
         const vm = this;
-        let mapInstance = vm.mapInstance;
         const wmsOption = {
           version: "1.3.0",
           layers: 1,
@@ -292,7 +330,8 @@
 
       displayMineHistoryWMS() {
         const vm = this;
-        let mapInstance = vm.mapInstance;
+        const mapInstance = vm.mapInstance;
+        if (!mapInstance) return;
 
         for (let i = 0; i < 6; i++) {
           const wmsOption = {
@@ -306,14 +345,14 @@
           };
           const wmsUrl =
             "https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_history/MapServer/WMSServer";
-          const mineLayer = L.tileLayer.wms(wmsUrl, wmsOption).addTo(mapInstance);
+          L.tileLayer.wms(wmsUrl, wmsOption).addTo(mapInstance);
         }
       },
     },
     async mounted() {
       const vm = this;
-      const mapDom = this.$refs.mapContainer;
-      let mapInstance = L.map(mapDom, {
+      const mapDom = vm.$refs.mapContainer as HTMLElement;
+      const mapInstance = L.map(mapDom, {
         center: [23.58, 120.58],
         zoom: 9,
       });
@@ -329,10 +368,8 @@
       // console.log(L.glify.shader.fragment.polygon);
       // console.log(L.glify.shader.vertex);
 
-      console.log(vm.mapInstance);
-
       const geoJsonData = await vm.getGeoJSONLayer();
-      const bounds = L.geoJSON(geoJsonData).getBounds();
+      const bounds = L.geoJSON(geoJsonData as any).getBounds();
       if (bounds.isValid()) {
         vm.mapInstance.fitBounds(bounds);
       }
@@ -348,7 +385,7 @@
       vm.displayCctvKml();
     },
     created() {},
-  };
+  });
 </script>
 
 <style scoped>

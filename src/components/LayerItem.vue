@@ -19,29 +19,36 @@
   </div>
 </template>
 
-<script>
-  export default {
+<script lang="ts">
+  import { defineComponent, type PropType } from "vue";
+  import type { LayerOpacityChangePayload, ManagedLayerViewModel } from "../types/ManagedLayer";
+
+  export default defineComponent({
     name: "LayerItem",
     props: {
       layer: {
-        type: Object,
+        type: Object as PropType<ManagedLayerViewModel>,
         required: true,
       },
     },
-    emits: ["opacity-change"],
+    emits: {
+      "opacity-change": (payload: LayerOpacityChangePayload) => {
+        return typeof payload?.id === "number" && typeof payload?.opacity === "number";
+      },
+    },
     data() {
       return {
         opacityPercent: Math.round((this.layer?.params?.opacity ?? 1) * 100),
       };
     },
     computed: {
-      localOpacity() {
+      localOpacity(): number {
         return this.opacityPercent / 100;
       },
     },
     watch: {
       "layer.params.opacity": {
-        handler(nextOpacity) {
+        handler(nextOpacity: number) {
           const nextPercent = Math.round((nextOpacity ?? 1) * 100);
           if (nextPercent !== this.opacityPercent) {
             this.opacityPercent = nextPercent;
@@ -57,7 +64,7 @@
         });
       },
     },
-  };
+  });
 </script>
 
 <style scoped>
