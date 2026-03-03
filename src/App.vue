@@ -8,7 +8,7 @@
     <div class="main__map_container" id="mapContainer" ref="mapContainer"></div>
     <div class="main__control_panel">
       <div class="h1">Control Panel</div>
-      <div v-for="layer in managedLayers" :key="layer.id">
+      <div v-for="layer in uiLayers" :key="layer.id">
         <layer-item :layer="layer" @opacity-change="rangeChange" />
       </div>
     </div>
@@ -21,17 +21,7 @@
   import "leaflet-kml";
   import "leaflet.glify";
   import LayerItem from "./components/LayerItem.vue";
-
-  class ManagedLayer {
-    constructor(id, name, type, params = {}, layerRef = null) {
-      this.id = id;
-      this.name = name;
-      // VectorLayer, TileLayer, etc.
-      this.type = type;
-      this.params = params;
-      this.layerRef = layerRef;
-    }
-  }
+  import { layerGroup } from "leaflet";
 
   export default {
     components: {
@@ -42,19 +32,41 @@
       return {
         // maxDN: 0,
         mapInstance: {},
-        WMSLayers: [],
-        managedLayers: [],
+        managedLayerGroup: {},
+        uiLayers: [],
         opacity1: "100",
         geoJsonData: {},
         isLoading: false,
-        kmlLayerIntersection: {},
         kmlLayerCctv: {},
       };
     },
     methods: {
+      addManagedLayer(layer, managed) {
+        const vm = this;
+        layer.managed = managed;
+        vm.managedLayerGroup.addLayer(layer);
+        vm.refreshUiLayers();
+      },
+
+      refreshUiLayers() {
+        const vm = this;
+        const nextLayers = [];
+        vm.managedLayerGroup.eachLayer((layer) => {
+          const id = vm.managedLayerGroup.getLayerId(layer);
+          const managed = layer.managed || {};
+          nextLayers.push({
+            id,
+            name: managed.name || `layer_${id}`,
+            type: managed.type || "Layer",
+            params: managed.params || { opacity: 1 },
+          });
+        });
+        vm.uiLayers = nextLayers;
+      },
+
       rangeChange(payload) {
         const vm = this;
-        let layerId = vm.managedLayers?.[0]?.id;
+        let layerId = vm.uiLayers?.[0]?.id;
         let opacityPercentage = Number(vm.opacity1) / 100;
 
         if (payload && typeof payload === "object") {
@@ -62,17 +74,19 @@
           opacityPercentage = payload.opacity;
         }
 
-        const target = vm.managedLayers.find((item) => item.id === layerId);
-        if (!target) return;
+        const targetLayer = vm.managedLayerGroup.getLayer(layerId);
+        if (!targetLayer) return;
+        if (!targetLayer.managed) return;
 
-        target.params.opacity = opacityPercentage;
+        targetLayer.managed.params = targetLayer.managed.params || {};
+        targetLayer.managed.params.opacity = opacityPercentage;
 
-        if (typeof target.layerRef?.setOpacity === "function") {
-          target.layerRef.setOpacity(opacityPercentage);
+        if (typeof targetLayer.setOpacity === "function") {
+          targetLayer.setOpacity(opacityPercentage);
         }
 
-        if (typeof target.layerRef?.eachLayer === "function") {
-          target.layerRef.eachLayer((childLayer) => {
+        if (typeof targetLayer.eachLayer === "function") {
+          targetLayer.eachLayer((childLayer) => {
             if (typeof childLayer.setStyle === "function") {
               childLayer.setStyle({
                 opacity: opacityPercentage,
@@ -84,6 +98,8 @@
             }
           });
         }
+
+        vm.refreshUiLayers();
       },
       // 取得 GeoJSON 資料
       async getGeoJSONLayer() {
@@ -222,18 +238,12 @@
           const parser = new DOMParser();
           // 解析 Kml
           const kmlData = parser.parseFromString(data, "text/xml");
-          vm.kmlLayerIntersection = new L.KML(kmlData);
 
-          vm.mapInstance.addLayer(vm.kmlLayerIntersection);
-
-          const managedLayer = new ManagedLayer(
-            L.stamp(vm.kmlLayerIntersection),
-            "T61_intersection.kml",
-            "VectorLayer",
-            { opacity: 1, subType: "KML" },
-            vm.kmlLayerIntersection,
-          );
-          vm.managedLayers.push(managedLayer);
+          vm.addManagedLayer(new L.KML(kmlData), {
+            name: "T61_intersection.kml",
+            type: "VectorLayer",
+            params: { opacity: 1, subType: "KML" },
+          });
         });
       },
 
@@ -247,18 +257,12 @@
           const parser = new DOMParser();
           // 解析 Kml
           const kmlData = parser.parseFromString(data, "text/xml");
-          vm.kmlLayerCctv = new L.KML(kmlData);
 
-          vm.mapInstance.addLayer(vm.kmlLayerCctv);
-
-          const managedLayer = new ManagedLayer(
-            L.stamp(vm.kmlLayerCctv),
-            "CCTV_T61.kml",
-            "VectorLayer",
-            { opacity: 1, subType: "KML" },
-            vm.kmlLayerCctv,
-          );
-          vm.managedLayers.push(managedLayer);
+          vm.addManagedLayer(new L.KML(kmlData), {
+            name: "CCTV_T61.kml",
+            type: "VectorLayer",
+            params: { opacity: 1, subType: "KML" },
+          });
         });
       },
 
@@ -277,17 +281,12 @@
         };
         const wmsUrl =
           "https://gis.pstcom.com.tw/pstarcgisserver/services/MINE/MineMap_v2/MapServer/WMSServer";
-        const mineLayer = L.tileLayer.wms(wmsUrl, wmsOption).addTo(mapInstance);
-        vm.WMSLayers.push(mineLayer);
-
-        const managedLayer = new ManagedLayer(
-          L.stamp(mineLayer),
-          wmsOption.layerName,
-          "TileLayer",
-          { opacity: wmsOption.opacity },
-          mineLayer,
-        );
-        vm.managedLayers.push(managedLayer);
+        const mineLayer = L.tileLayer.wms(wmsUrl, wmsOption);
+        vm.addManagedLayer(mineLayer, {
+          name: wmsOption.layerName,
+          type: "TileLayer",
+          params: { opacity: wmsOption.opacity },
+        });
         // console.log(mineLayer);
       },
 
@@ -319,12 +318,18 @@
         zoom: 9,
       });
       vm.mapInstance = mapInstance;
+      // object
+      // console.log(typeof L.layerGroup(), L.layerGroup());
+
+      vm.managedLayerGroup = L.layerGroup().addTo(mapInstance);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(mapInstance);
       // console.log(L.glify.shader.fragment.polygon);
       // console.log(L.glify.shader.vertex);
+
+      console.log(vm.mapInstance);
 
       const geoJsonData = await vm.getGeoJSONLayer();
       const bounds = L.geoJSON(geoJsonData).getBounds();
