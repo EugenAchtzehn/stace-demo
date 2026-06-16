@@ -26,6 +26,7 @@
 
   // ===== external libs =====
   import { defineComponent } from "vue";
+  import axios from "axios";
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
   import "leaflet-kml";
@@ -118,7 +119,7 @@
         // targetLayer 有可能是多個圖層組成，向是 KML 圖層，內部還有多個 Layer 所以要使用下面的 eachLayer 來處理
         // 如果 targetLayer 只有一個 Layer 則使用 setOpacity 來處理
         if (typeof leafLayer.setOpacity === "function") {
-          console.log("setOpacity", leafLayer.setOpacity);
+          // console.log("setOpacity", leafLayer.setOpacity);
           leafLayer.setOpacity(updatedOpacity);
         }
 
@@ -149,7 +150,7 @@
         const url = `${import.meta.env.BASE_URL}Mid2_Country_Site.json`;
         vm.isLoading = true;
         try {
-          const response = await (vm as any).axios.get(url, {
+          const response = await axios.get(url, {
             responseType: "text",
             transformResponse: [(data: string) => data],
           });
@@ -263,7 +264,7 @@
       displayIntersectionKml() {
         const vm = this;
         const url = `${import.meta.env.BASE_URL}T61_intersection.kml`;
-        (vm as any).axios.get(url).then(function (response: { data: string }) {
+        axios.get(url).then(function (response: { data: string }) {
           const data = response.data;
           // console.log(arguments);
           // console.log(data);
@@ -283,7 +284,7 @@
       displayCctvKml() {
         const vm = this;
         const url = `${import.meta.env.BASE_URL}CCTV_T61.kml`;
-        (vm as any).axios.get(url).then(function (response: { data: string }) {
+        axios.get(url).then(function (response: { data: string }) {
           const data = response.data;
           // console.log(arguments);
           const parser = new DOMParser();
